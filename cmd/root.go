@@ -67,15 +67,6 @@ boot - prepare a system to be upgraded on reboot`,
 
 			eval := hydraClient.GetEval(build)
 
-			// health checks
-			for _, h := range canary {
-				err := healthcheck.Ping(h)
-				if err != nil {
-					slog.Info("Ping healthcheck failed. Exiting.", slog.String("host", h))
-					os.Exit(1)
-				}
-			}
-
 			// check flake metadata to see if this is an update
 			selfMetadata := nix.GetFlakeMetadata("self")
 			hydraMetadata := nix.GetFlakeMetadata(eval.Flake)
@@ -85,6 +76,15 @@ boot - prepare a system to be upgraded on reboot`,
 				os.Exit(0)
 			}
 			flakeSpec := fmt.Sprintf("%s#%s", hydraMetadata.OriginalUrl, host)
+
+			// health checks
+			for _, h := range canary {
+				err := healthcheck.Ping(h)
+				if err != nil {
+					slog.Info("Ping healthcheck failed. Exiting.", slog.String("host", h))
+					os.Exit(1)
+				}
+			}
 			slog.Info("Performing system upgrade.", slog.String("flake", flakeSpec))
 
 			nix.NixosRebuild(operation, flakeSpec, passthru)
