@@ -102,7 +102,6 @@ func (client HydraClient) GetEval(build Build) Eval {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(string(body))
 	slog.Debug("GetEval",
 		slog.String("body", string(body)),
 		slog.String("url", requestUrl))
@@ -113,6 +112,6 @@ func (client HydraClient) GetEval(build Build) Eval {
 		panic(err)
 	}
 
-	fmt.Printf("%+v", eval)
+	slog.Debug(fmt.Sprintf("%+v", eval))
 	return eval
 }
