@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/hyperparabolic/nixos-hydra-upgrade/healthcheck"
 	"github.com/hyperparabolic/nixos-hydra-upgrade/hydra"
 	"github.com/spf13/cobra"
 )
@@ -58,10 +59,18 @@ boot - prepare a system to be upgraded on reboot`,
 			}
 			if build.BuildStatus != 0 {
 				slog.Info("Latest build unsuccessful. Exiting.", slog.Int("buildstatus", build.BuildStatus))
+				os.Exit(0)
 			}
 
 			eval := hydraClient.GetEval(build)
 			slog.Info("flake", slog.String("flake", eval.Flake))
+
+			for _, h := range canary {
+				err := healthcheck.Ping(h)
+				if err != nil {
+					slog.Info("Ping healthcheck failed. Exiting.", slog.String("host", h))
+				}
+			}
 		},
 	}
 )
