@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/hyperparabolic/nixos-hydra-upgrade/hydra"
 	"github.com/spf13/cobra"
 )
 
@@ -40,8 +41,27 @@ boot - prepare a system to be upgraded on reboot`,
 			if debug {
 				logLevel = slog.LevelDebug
 			}
-			logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel}))
+			logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel, AddSource: true}))
 			slog.SetDefault(logger)
+
+			hydraClient := hydra.HydraClient{
+				Instance: instance,
+				JobSet:   jobset,
+				Job:      job,
+				Project:  project,
+			}
+
+			build := hydraClient.GetLatestBuild()
+			if build.Finished != 1 {
+				slog.Info("Latest build unfinished. Exiting.")
+				os.Exit(0)
+			}
+			if build.BuildStatus != 0 {
+				slog.Info("Latest build unsuccessful. Exiting.", slog.Int("buildstatus", build.BuildStatus))
+			}
+
+			eval := hydraClient.GetEval(build)
+			slog.Info("flake", slog.String("flake", eval.Flake))
 		},
 	}
 )
