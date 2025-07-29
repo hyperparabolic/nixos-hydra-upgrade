@@ -7,6 +7,7 @@
   };
 
   outputs = {
+    self,
     nixpkgs,
     systems,
     ...
@@ -28,6 +29,11 @@
         ];
       };
     });
+
+    nixosModules = {
+      default = self.nixosModules.nixos-hydra-upgrade;
+      nixos-hydra-upgrade = import ./modules/nixos-hydra-upgrade;
+    };
 
     packages = forEachSystem (system: {
       default = pkgsFor.${system}.buildGoModule {
