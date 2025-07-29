@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 
 	"github.com/hyperparabolic/nixos-hydra-upgrade/healthcheck"
 	"github.com/hyperparabolic/nixos-hydra-upgrade/hydra"
+	"github.com/hyperparabolic/nixos-hydra-upgrade/nix"
 	"github.com/spf13/cobra"
 )
 
@@ -45,6 +47,7 @@ boot - prepare a system to be upgraded on reboot`,
 			logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel, AddSource: true}))
 			slog.SetDefault(logger)
 
+			// get latest hydra build status and flake
 			hydraClient := hydra.HydraClient{
 				Instance: instance,
 				JobSet:   jobset,
@@ -59,18 +62,29 @@ boot - prepare a system to be upgraded on reboot`,
 			}
 			if build.BuildStatus != 0 {
 				slog.Info("Latest build unsuccessful. Exiting.", slog.Int("buildstatus", build.BuildStatus))
-				os.Exit(0)
+				os.Exit(1)
 			}
 
 			eval := hydraClient.GetEval(build)
-			slog.Info("flake", slog.String("flake", eval.Flake))
 
+			// health checks
 			for _, h := range canary {
 				err := healthcheck.Ping(h)
 				if err != nil {
 					slog.Info("Ping healthcheck failed. Exiting.", slog.String("host", h))
+					os.Exit(1)
 				}
 			}
+
+			// check flake metadata to see if this is an update
+			selfMetadata := nix.GetFlakeMetadata("self")
+			hydraMetadata := nix.GetFlakeMetadata(eval.Flake)
+
+			if selfMetadata.LastModified >= hydraMetadata.LastModified {
+				slog.Info("System is already up to date. Exiting.")
+				os.Exit(0)
+			}
+			slog.Info("Performing system upgrade.", slog.String("flake", fmt.Sprintf("%s#%s", hydraMetadata.OriginalUrl, host)))
 		},
 	}
 )
