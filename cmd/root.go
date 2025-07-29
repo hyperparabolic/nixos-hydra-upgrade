@@ -84,7 +84,14 @@ boot - prepare a system to be upgraded on reboot`,
 				slog.Info("System is already up to date. Exiting.")
 				os.Exit(0)
 			}
-			slog.Info("Performing system upgrade.", slog.String("flake", fmt.Sprintf("%s#%s", hydraMetadata.OriginalUrl, host)))
+			flakeSpec := fmt.Sprintf("%s#%s", hydraMetadata.OriginalUrl, host)
+			slog.Info("Performing system upgrade.", slog.String("flake", flakeSpec))
+
+			nix.NixosRebuild(operation, flakeSpec, passthru)
+
+			if reboot {
+				nix.Reboot()
+			}
 		},
 	}
 )
@@ -108,5 +115,4 @@ func init() {
 	rootCmd.Flags().StringVar(&host, "host", "", "Host (required)")
 	rootCmd.MarkFlagRequired("host")
 	rootCmd.Flags().StringSliceVar(&passthru, "passthru-args", []string{}, "Additional args to provide to nixos-rebuild. May be comma delimited or specified multiple times.")
-
 }
