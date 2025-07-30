@@ -3,6 +3,7 @@
   config,
   lib,
   pkgs,
+  ...
 }: let
   cfg = config.system.autoUpgradeHydra;
   nixosHydraUpgradePackages = inputs.nixos-hydra-upgrade.packages.${pkgs.system};
@@ -68,10 +69,9 @@ in {
         description = lib.mdDoc ''
           Options to specify health checks to perform before system upgrade.
         '';
-
         type = lib.types.submodule {
           options = {
-            canaryHosts = {
+            canaryHosts = lib.mkOption {
               type = lib.types.listOf lib.types.str;
               default = [];
               description = lib.mdDoc ''
@@ -132,11 +132,9 @@ in {
         }
         // config.networking.proxy.envVars;
 
-      path = with pkgs; [
+      path = [
         config.nix.package
-        # config options for this are undocumented and presumably unstable?
-        # doesn't support development versions of nixos-rebuild I guess.
-        nixos-rebuild
+        config.system.build.nixos-rebuild
       ];
 
       script = let

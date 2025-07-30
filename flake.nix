@@ -35,12 +35,22 @@
       nixos-hydra-upgrade = import ./modules/nixos-hydra-upgrade;
     };
 
-    packages = forEachSystem (system: {
+    packages = forEachSystem (system: let
+      pkgs = pkgsFor.${system};
+    in {
       default = pkgsFor.${system}.buildGoModule {
         inherit pname;
         version = "0.0.1";
         src = ./.;
         vendorHash = "sha256-CR0CSfqWcuc0UTZJHCHW10o5l6iCO7eWEgSVIJiZt6c=";
+
+        meta = {
+          homepage = "https://github.com/hyperparabolic/nixos-hydra-upgrade";
+          description = "nixos upgrader that queries hydra and performs health checks";
+          license = pkgs.lib.licenses.mit;
+          mainProgram = "nixos-hydra-upgrade";
+          platforms = pkgs.lib.platforms.linux;
+        };
       };
     });
   };
