@@ -88,8 +88,10 @@ boot - prepare a system to be upgraded on reboot`,
 			slog.Info("Performing system upgrade.", slog.String("flake", flakeSpec))
 
 			nix.NixosRebuild(operation, flakeSpec, passthru)
+			slog.Info("System upgrade complete.", slog.String("flake", flakeSpec))
 
 			if reboot {
+				slog.Info("Initiating reboot")
 				nix.Reboot()
 			}
 		},
