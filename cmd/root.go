@@ -14,7 +14,8 @@ import (
 
 var (
 	// flags
-	debug bool
+	configFile string
+	debug      bool
 
 	instance string
 	jobset   string
@@ -36,9 +37,9 @@ var (
 switch - upgrade a system in place
 boot - prepare a system to be upgraded on reboot`,
 		ValidArgs: []string{"boot", "switch"},
-		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
+		Args:      cobra.MatchAll(cobra.MaximumNArgs(1), cobra.OnlyValidArgs),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			config, err := config.InitConfig("./config.yaml")
+			config, err := config.InitializeConfig(configFile)
 			// TODO: cleanup once tests
 			fmt.Printf("%+v", config)
 
@@ -116,6 +117,7 @@ func Execute() error {
 }
 
 func init() {
+	rootCmd.Flags().StringVarP(&configFile, "config", "c", "", "Config file")
 	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
 	rootCmd.Flags().StringVar(&instance, "instance", "", "Hydra instance (required)")
 	// rootCmd.MarkFlagRequired("instance")
