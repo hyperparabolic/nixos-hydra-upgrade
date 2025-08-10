@@ -1,6 +1,8 @@
 package config
 
 import (
+	"strings"
+
 	"github.com/spf13/viper"
 )
 
@@ -29,11 +31,13 @@ type Config struct {
 	Debug        bool
 	HealthCheck  HealthCheckConfig
 	Hydra        HydraConfig
-	NixOSRebuild NixOSRebuildConfig
+	NixOSRebuild NixOSRebuildConfig `mapstructure:"nixos-rebuild"`
 	Reboot       bool
 }
 
-func InitConfig(configFile string) (Config, error) {
+// Builds a config.Config from a config file and environment variables
+// Environment variables take priority over config provided values.
+func InitializeConfig(configFile string) (Config, error) {
 	v := viper.New()
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
@@ -42,16 +46,31 @@ func InitConfig(configFile string) (Config, error) {
 		v.SetConfigFile(configFile)
 	}
 	v.AddConfigPath("/etc/nixos-hydra-upgrade")
-	v.AddConfigPath(".")
 
-	// TODO: defaults
-	// TODO: merge environment variables with priority
+	v.SetEnvPrefix(ENV_PREFIX)
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
+
+	// manually bind so environment variables function without config file unmarshalling
+	v.BindEnv("debug")
+	v.BindEnv("healthcheck.canaryhosts")
+	v.BindEnv("hydra.instance")
+	v.BindEnv("hydra.jobset")
+	v.BindEnv("hydra.job")
+	v.BindEnv("hydra.project")
+	v.BindEnv("nixos-rebuild.operation")
+	v.BindEnv("nixos-rebuild.host")
+	v.BindEnv("nixos-rebuild.args")
+	v.BindEnv("reboot")
+
 	// TODO: merge flags with priority
-	// TODO: config priority tests
 	// TODO: config validation
 	// TODO: config validation tests
 
 	config := Config{}
+	// defaults
+	config.Debug = false
+	config.NixOSRebuild.Operation = "boot"
+	config.Reboot = false
 
 	err := v.ReadInConfig()
 	if err != nil {
@@ -61,9 +80,7 @@ func InitConfig(configFile string) (Config, error) {
 	}
 	err = v.Unmarshal(&config)
 	if err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return config, err
-		}
+		return config, err
 	}
 
 	return config, nil
