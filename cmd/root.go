@@ -28,8 +28,10 @@ var (
 
 	canary []string
 	reboot bool
+)
 
-	rootCmd = &cobra.Command{
+func NewRootCmd() *cobra.Command {
+	rootCmd := &cobra.Command{
 		Use:   "nixos-hydra-upgrade [boot|switch]",
 		Short: "nixos-hydra-upgrade performs NixOS system upgrades based on hydra build success",
 		Long: `A NixOS flake system upgrader that upgrades to derivations only after they are successfully built in Hydra, and built in validations pass.
@@ -110,26 +112,17 @@ boot - prepare a system to be upgraded on reboot`,
 			}
 		},
 	}
-)
 
-func Execute() error {
-	return rootCmd.Execute()
-}
+	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "Config file")
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
+	rootCmd.PersistentFlags().StringVar(&instance, "instance", "", "Hydra instance (required)")
+	rootCmd.PersistentFlags().StringVar(&project, "project", "", "Hydra project (required)")
+	rootCmd.PersistentFlags().StringVar(&jobset, "jobset", "", "Hydra jobset (required)")
+	rootCmd.PersistentFlags().StringVar(&job, "job", "", "Hydra job (required)")
+	rootCmd.PersistentFlags().BoolVar(&reboot, "reboot", false, "Reboot system on successful upgrade")
+	rootCmd.PersistentFlags().StringSliceVar(&canary, "canary", []string{}, "Canary systems, only upgrade if these systems respond to ping. May be comma delimited or specificied multiple times")
+	rootCmd.PersistentFlags().StringVar(&host, "host", "", "Host (required)")
+	rootCmd.PersistentFlags().StringSliceVar(&passthru, "passthru-args", []string{}, "Additional args to provide to nixos-rebuild. May be comma delimited or specified multiple times.")
 
-func init() {
-	rootCmd.Flags().StringVarP(&configFile, "config", "c", "", "Config file")
-	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
-	rootCmd.Flags().StringVar(&instance, "instance", "", "Hydra instance (required)")
-	// rootCmd.MarkFlagRequired("instance")
-	rootCmd.Flags().StringVar(&project, "project", "", "Hydra project (required)")
-	// rootCmd.MarkFlagRequired("project")
-	rootCmd.Flags().StringVar(&jobset, "jobset", "", "Hydra jobset (required)")
-	// rootCmd.MarkFlagRequired("jobset")
-	rootCmd.Flags().StringVar(&job, "job", "", "Hydra job (required)")
-	// rootCmd.MarkFlagRequired("job")
-	rootCmd.Flags().BoolVar(&reboot, "reboot", false, "Reboot system on successful upgrade")
-	rootCmd.Flags().StringSliceVar(&canary, "canary", []string{}, "Canary systems, only upgrade if these systems respond to ping. May be comma delimited or specificied multiple times")
-	rootCmd.Flags().StringVar(&host, "host", "", "Host (required)")
-	// rootCmd.MarkFlagRequired("host")
-	rootCmd.Flags().StringSliceVar(&passthru, "passthru-args", []string{}, "Additional args to provide to nixos-rebuild. May be comma delimited or specified multiple times.")
+	return rootCmd
 }
