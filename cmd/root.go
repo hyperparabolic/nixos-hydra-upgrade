@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/hyperparabolic/nixos-hydra-upgrade/config"
+	"github.com/hyperparabolic/nixos-hydra-upgrade/cmd/config"
 	"github.com/hyperparabolic/nixos-hydra-upgrade/healthcheck"
 	"github.com/hyperparabolic/nixos-hydra-upgrade/hydra"
 	"github.com/hyperparabolic/nixos-hydra-upgrade/nix"
