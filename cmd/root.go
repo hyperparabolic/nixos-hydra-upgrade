@@ -12,23 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	// flags
-	configFile string
-	debug      bool
-
-	instance string
-	jobset   string
-	job      string
-	project  string
-
-	operation string
-	host      string
-	passthru  []string
-
-	canary []string
-	reboot bool
-)
+var conf config.Config
 
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -41,9 +25,10 @@ boot - prepare a system to be upgraded on reboot`,
 		ValidArgs: []string{"boot", "switch"},
 		Args:      cobra.MatchAll(cobra.MaximumNArgs(1), cobra.OnlyValidArgs),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			config, err := config.InitializeConfig(configFile)
+			var err error
+			conf, err = config.InitializeConfig(cmd, args)
 			// TODO: cleanup once tests
-			fmt.Printf("%+v", config)
+			fmt.Printf("%+v", conf)
 
 			if err != nil {
 				return err
@@ -53,11 +38,10 @@ boot - prepare a system to be upgraded on reboot`,
 		Run: func(cmd *cobra.Command, args []string) {
 			// TODO: cleanup once tests
 			os.Exit(0)
-			operation = args[0]
 
 			// structured logging setup
 			logLevel := slog.LevelInfo
-			if debug {
+			if conf.Debug {
 				logLevel = slog.LevelDebug
 			}
 			logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel, AddSource: true}))
@@ -65,10 +49,10 @@ boot - prepare a system to be upgraded on reboot`,
 
 			// get latest hydra build status and flake
 			hydraClient := hydra.HydraClient{
-				Instance: instance,
-				JobSet:   jobset,
-				Job:      job,
-				Project:  project,
+				Instance: conf.Hydra.Instance,
+				JobSet:   conf.Hydra.JobSet,
+				Job:      conf.Hydra.Job,
+				Project:  conf.Hydra.Project,
 			}
 
 			build := hydraClient.GetLatestBuild()
@@ -91,10 +75,10 @@ boot - prepare a system to be upgraded on reboot`,
 				slog.Info("System is already up to date. Exiting.")
 				os.Exit(0)
 			}
-			flakeSpec := fmt.Sprintf("%s#%s", hydraMetadata.OriginalUrl, host)
+			flakeSpec := fmt.Sprintf("%s#%s", hydraMetadata.OriginalUrl, conf.NixOSRebuild.Host)
 
 			// health checks
-			for _, h := range canary {
+			for _, h := range conf.HealthCheck.CanaryHosts {
 				err := healthcheck.Ping(h)
 				if err != nil {
 					slog.Info("Ping healthcheck failed. Exiting.", slog.String("host", h))
@@ -103,26 +87,26 @@ boot - prepare a system to be upgraded on reboot`,
 			}
 			slog.Info("Performing system upgrade.", slog.String("flake", flakeSpec))
 
-			nix.NixosRebuild(operation, flakeSpec, passthru)
+			nix.NixosRebuild(conf.NixOSRebuild.Operation, flakeSpec, conf.NixOSRebuild.Args)
 			slog.Info("System upgrade complete.", slog.String("flake", flakeSpec))
 
-			if reboot {
+			if conf.Reboot {
 				slog.Info("Initiating reboot")
 				nix.Reboot()
 			}
 		},
 	}
 
-	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "Config file")
-	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
-	rootCmd.PersistentFlags().StringVar(&instance, "instance", "", "Hydra instance (required)")
-	rootCmd.PersistentFlags().StringVar(&project, "project", "", "Hydra project (required)")
-	rootCmd.PersistentFlags().StringVar(&jobset, "jobset", "", "Hydra jobset (required)")
-	rootCmd.PersistentFlags().StringVar(&job, "job", "", "Hydra job (required)")
-	rootCmd.PersistentFlags().BoolVar(&reboot, "reboot", false, "Reboot system on successful upgrade")
-	rootCmd.PersistentFlags().StringSliceVar(&canary, "canary", []string{}, "Canary systems, only upgrade if these systems respond to ping. May be comma delimited or specificied multiple times")
-	rootCmd.PersistentFlags().StringVar(&host, "host", "", "Host (required)")
-	rootCmd.PersistentFlags().StringSliceVar(&passthru, "passthru-args", []string{}, "Additional args to provide to nixos-rebuild. May be comma delimited or specified multiple times.")
+	rootCmd.PersistentFlags().StringP("config", "c", "", "Config file")
+	rootCmd.PersistentFlags().BoolP(config.CobraKeys.Debug, "d", false, "Enable debug logging")
+	rootCmd.PersistentFlags().String(config.CobraKeys.Hydra.Instance, "", "Hydra instance (required)")
+	rootCmd.PersistentFlags().String(config.CobraKeys.Hydra.Project, "", "Hydra project (required)")
+	rootCmd.PersistentFlags().String(config.CobraKeys.Hydra.JobSet, "", "Hydra jobset (required)")
+	rootCmd.PersistentFlags().String(config.CobraKeys.Hydra.Job, "", "Hydra job (required)")
+	rootCmd.PersistentFlags().Bool(config.CobraKeys.Reboot, false, "Reboot system on successful upgrade")
+	rootCmd.PersistentFlags().StringSlice(config.CobraKeys.HealthCheck.CanaryHosts, []string{}, "Canary systems, only upgrade if these systems respond to ping. May be comma delimited or specificied multiple times")
+	rootCmd.PersistentFlags().String(config.CobraKeys.NixOSRebuild.Host, "", "Host (required)")
+	rootCmd.PersistentFlags().StringSlice(config.CobraKeys.NixOSRebuild.Args, []string{}, "Additional args to provide to nixos-rebuild. May be comma delimited or specified multiple times.")
 
 	return rootCmd
 }
