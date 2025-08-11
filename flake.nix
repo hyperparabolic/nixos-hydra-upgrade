@@ -42,7 +42,7 @@
         inherit pname;
         version = "0.0.1";
         src = ./.;
-        vendorHash = "sha256-kc/b/DrghxC2k3T+pana7k5f3Hh1Uyxk/TVxTNuHZbY=";
+        vendorHash = "sha256-pkvfBMjIy8F46rWgI1IheXjDHJHOzwBJgA0mkSUdgXg=";
 
         meta = {
           homepage = "https://github.com/hyperparabolic/nixos-hydra-upgrade";

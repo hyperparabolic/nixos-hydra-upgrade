@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/hyperparabolic/nixos-hydra-upgrade/assert"
 	"github.com/hyperparabolic/nixos-hydra-upgrade/cmd"
 	"github.com/hyperparabolic/nixos-hydra-upgrade/cmd/config"
@@ -238,4 +239,87 @@ func TestInitializeConfig(t *testing.T) {
 		assert.ArrayEqual(t, c.HealthCheck.CanaryHosts, cflag.HealthCheck.CanaryHosts)
 		assert.Equal(t, c.Hydra.Instance, cflag.Hydra.Instance)
 	})
+}
+
+func cloneConfig(c config.Config) config.Config {
+	c2 := c
+	c2.HealthCheck.CanaryHosts = []string{}
+	c2.HealthCheck.CanaryHosts = append(c2.HealthCheck.CanaryHosts, c.HealthCheck.CanaryHosts...)
+	c2.NixOSRebuild.Args = []string{}
+	c2.NixOSRebuild.Args = append(c2.NixOSRebuild.Args, c.NixOSRebuild.Args...)
+
+	return c2
+}
+
+func TestValidate(t *testing.T) {
+	t.Run("full config passes validation without errors", func(t *testing.T) {
+		err := cenv.Validate()
+
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("required config passes validation without errors", func(t *testing.T) {
+		c := cloneConfig(cenv)
+		c.HealthCheck.CanaryHosts = []string{}
+		c.NixOSRebuild.Args = []string{}
+
+		err := c.Validate()
+
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+
+	// bad configurations
+	emptyCanary := cloneConfig(cenv)
+	emptyCanary.HealthCheck.CanaryHosts = []string{""}
+	nonUrlInstance := cloneConfig(cenv)
+	nonUrlInstance.Hydra.Instance = "asdf"
+	emptyInstance := cloneConfig(cenv)
+	emptyInstance.Hydra.Instance = ""
+	emptyJob := cloneConfig(cenv)
+	emptyJob.Hydra.Job = ""
+	emptyJobSet := cloneConfig(cenv)
+	emptyJobSet.Hydra.JobSet = ""
+	emptyProject := cloneConfig(cenv)
+	emptyProject.Hydra.Project = ""
+	emptyOperation := cloneConfig(cenv)
+	emptyOperation.NixOSRebuild.Operation = ""
+	badOperation := cloneConfig(cenv)
+	badOperation.NixOSRebuild.Operation = "invalid"
+	emptyHost := cloneConfig(cenv)
+	emptyHost.NixOSRebuild.Host = ""
+	emptyArg := cloneConfig(cenv)
+	emptyArg.NixOSRebuild.Args = []string{""}
+
+	var validationFailureTests = []struct {
+		description string
+		conf        config.Config
+	}{
+		{"empty HealthCheck.CanaryHosts string", emptyCanary},
+		{"non-url Hydra.Instance", nonUrlInstance},
+		{"empty Hydra.Instance", emptyInstance},
+		{"empty Hydra.Job", emptyJob},
+		{"empty Hydra.JobSet", emptyJobSet},
+		{"empty Hydra.Project", emptyProject},
+		{"empty NixOSRebuild.Operation", emptyOperation},
+		{"invalid NixOSRebuild.Operation", badOperation},
+		{"empty NixOSRebuild.Host", emptyHost},
+		{"empty NixOSRebuild.Args string", emptyArg},
+	}
+
+	for _, test := range validationFailureTests {
+		t.Run(test.description, func(t *testing.T) {
+			err := test.conf.Validate()
+			if err == nil {
+				t.Error("unexpected successful validation")
+			}
+			validationErrors := err.(validator.ValidationErrors)
+			if len(validationErrors) > 1 {
+				t.Errorf("unexpected multiple validation failures:\n%v", err)
+			}
+		})
+	}
 }

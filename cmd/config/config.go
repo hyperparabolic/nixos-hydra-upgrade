@@ -1,35 +1,37 @@
 package config
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 type HealthCheckConfig struct {
-	CanaryHosts []string
+	CanaryHosts []string `validate:"required,dive,min=1"`
 }
 
 type HydraConfig struct {
-	Instance string
-	JobSet   string
-	Job      string
-	Project  string
+	Instance string `validate:"url"`
+	JobSet   string `validate:"min=1"`
+	Job      string `validate:"min=1"`
+	Project  string `validate:"min=1"`
 }
 
 type NixOSRebuildConfig struct {
-	Operation string
-	Host      string
-	Args      []string
+	Operation string   `validate:"oneof=boot switch"`
+	Host      string   `validate:"min=1"`
+	Args      []string `validate:"required,dive,min=1"`
 }
 
 // command config
 type Config struct {
 	Debug        bool
-	HealthCheck  HealthCheckConfig
-	Hydra        HydraConfig
-	NixOSRebuild NixOSRebuildConfig `mapstructure:"nixos-rebuild"`
+	HealthCheck  HealthCheckConfig  `validate:"required"`
+	Hydra        HydraConfig        `validate:"required"`
+	NixOSRebuild NixOSRebuildConfig `mapstructure:"nixos-rebuild" validate:"required"`
 	Reboot       bool
 }
 
@@ -60,8 +62,9 @@ type ConfigKeys struct {
 }
 
 var (
-	ENV_PREFIX = "NHU"
-	CobraKeys  = ConfigKeys{
+	envPrefix      = "NHU"
+	envKeyReplacer = strings.NewReplacer(".", "_", "-", "_")
+	CobraKeys      = ConfigKeys{
 		Debug: "debug",
 		HealthCheck: HealthCheckConfigKeys{
 			CanaryHosts: "canary",
@@ -99,8 +102,8 @@ var (
 	}
 )
 
-// Builds a config.Config from a config file and environment variables
-// Environment variables take priority over config provided values.
+// Builds a config.Config from a config file, environment variables
+// and CLI flags. flags > env > config.
 func InitializeConfig(rootCmd *cobra.Command, args []string) (Config, error) {
 	v := viper.New()
 	v.SetConfigName("config")
@@ -109,8 +112,8 @@ func InitializeConfig(rootCmd *cobra.Command, args []string) (Config, error) {
 	v.SetConfigFile(rootCmd.PersistentFlags().Lookup("config").Value.String())
 	v.AddConfigPath("/etc/nixos-hydra-upgrade")
 
-	v.SetEnvPrefix(ENV_PREFIX)
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
+	v.SetEnvPrefix(envPrefix)
+	v.SetEnvKeyReplacer(envKeyReplacer)
 
 	// manually bind so environment variables function without config file unmarshalling
 	v.BindEnv(ViperKeys.Debug)
@@ -135,9 +138,6 @@ func InitializeConfig(rootCmd *cobra.Command, args []string) (Config, error) {
 	v.BindPFlag(ViperKeys.NixOSRebuild.Args, rootCmd.PersistentFlags().Lookup(CobraKeys.NixOSRebuild.Args))
 	v.BindPFlag(ViperKeys.Reboot, rootCmd.PersistentFlags().Lookup(CobraKeys.Reboot))
 
-	// TODO: config validation
-	// TODO: config validation tests
-
 	config := Config{}
 	// defaults
 	config.Debug = false
@@ -159,4 +159,25 @@ func InitializeConfig(rootCmd *cobra.Command, args []string) (Config, error) {
 	}
 
 	return config, nil
+}
+
+// Validates a config struct. `err` should only be a `validator.ValidationErrors`
+// as long as all validators are valid.
+func (config Config) Validate() error {
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	err := validate.Struct(config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Helper. Transforms a config.ViperKey.* into its corresponding environment variable
+func GetEnv(viperKey string) string {
+	return fmt.Sprintf(
+		"%v_%v",
+		envPrefix,
+		envKeyReplacer.Replace(strings.ToUpper(viperKey)),
+	)
 }
