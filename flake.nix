@@ -37,12 +37,16 @@
 
     packages = forEachSystem (system: let
       pkgs = pkgsFor.${system};
+      version = "v0.2.0";
     in {
       default = pkgsFor.${system}.buildGoModule {
-        inherit pname;
-        version = "0.1.0";
+        inherit pname version;
         src = ./.;
-        vendorHash = "sha256-pkvfBMjIy8F46rWgI1IheXjDHJHOzwBJgA0mkSUdgXg=";
+        vendorHash = "sha256-fe0ZKSyRkenh2dph7jFIpwrNT8auqu69iFv2JjSgMlo=";
+
+        ldflags = [
+          "-X 'github.com/hyperparabolic/nixos-hydra-upgrade/cmd.Version=${version}'"
+        ];
 
         meta = {
           homepage = "https://github.com/hyperparabolic/nixos-hydra-upgrade";
@@ -51,6 +55,21 @@
           mainProgram = "nixos-hydra-upgrade";
           platforms = pkgs.lib.platforms.linux;
         };
+
+        nativeBuildInputs = with pkgs; [
+          installShellFiles
+          go
+        ];
+
+        postInstall = pkgs.lib.optionalString (pkgs.stdenv.buildPlatform.canExecute pkgs.stdenv.hostPlatform) ''
+          installShellCompletion --cmd nixos-hydra-upgrade \
+            --bash <($out/bin/nixos-hydra-upgrade completion bash) \
+            --fish <($out/bin/nixos-hydra-upgrade completion fish) \
+            --zsh <($out/bin/nixos-hydra-upgrade completion zsh)
+
+          $out/bin/nixos-hydra-upgrade docs man > nixos-hydra-upgrade.1
+          installManPage nixos-hydra-upgrade.1
+        '';
       };
     });
   };

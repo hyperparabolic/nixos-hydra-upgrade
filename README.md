@@ -56,9 +56,9 @@ Probably going to extend this to more options. These need to be converted to a f
 
 Hosts specified with the `--canary` cli flag or `system.autoUpgradeHydra.healthChecks.canaryHosts` are pinged as a precondition for upgrade.
 
-## config
+## NixOS module config
 
-A complete config looks something like:
+All of the options are documented in the [NixOS Module](./modules/nixos-hydra-upgrade/default.nix). Here's a sample config:
 
 ```nix
 {
@@ -68,29 +68,31 @@ A complete config looks something like:
 
   system.autoUpgradeHydra = {
     enable = true;
-    operation = "boot";
-    host = "hostname";
-    hydra = {
-      instance = "https://your.hydra.example.com";
-      project = "nix-config";
-      jobset = "main";
-      job = "hostname";
-    };
-    healthChecks = {
-      canaryHosts = [
-        # dependent service hostnames, urls, or ip addresses
-        "yourcanaryhostname"
-      ];
-    };
-    flags = [
-      # any extra options you want to pass to `nixos-rebuild`
-    ];
     # systemd.time#CALENDAR EVENTS
     dates = "*-*-* 04:40:00";
-    allowReboot = false;
+    reboot = false;
+    settings = {
+      healthChecks = {
+        canaryHosts = [
+          # dependent service hostnames, urls, or ip addresses
+          "yourcanaryhostname"
+        ];
+      };
+      hydra = {
+        instance = "https://your.hydra.example.com";
+        project = "nix-config";
+        jobset = "main";
+        job = "hostname";
+      };
+      nixos-rebuild = {
+        operation = "boot";
+        host = "hostname";
+        args = [
+          # any extra options you want to pass to `nixos-rebuild`
+        ];
+      };
+    };
   };
 }
 
 ```
-
-Open to more full compatibility with `system.autoUpgrade`, but just starting with the stuff I actually use.
