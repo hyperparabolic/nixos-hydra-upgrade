@@ -21,7 +21,7 @@ in {
           "EnvironmentFile=" section for the syntax) to define service environment variables.
           This option may be used to safely include secrets without exposure in the nix store.
 
-          See [usage](https://github.com/hyperparabolic/nixos-hydra-upgrade/blob/main/README.md#usage)
+          See [usage](https://github.com/hyperparabolic/nixos-hydra-upgrade/blob/${nixosHydraUpgradePackages.default.version}/README.md#usage)
           for environment variable details.
         '';
       };
@@ -40,7 +40,7 @@ in {
 
       settings = lib.mkOption {
         description = ''
-          Configuration for nixos-hydra-upgrade, see [usage](https://github.com/hyperparabolic/nixos-hydra-upgrade/blob/main/README.md#usage)
+          Configuration for nixos-hydra-upgrade, see [usage](https://github.com/hyperparabolic/nixos-hydra-upgrade/blob/${nixosHydraUpgradePackages.default.version}/README.md#usage)
           for details on all supported values.
         '';
         type = lib.types.submodule {
@@ -170,7 +170,7 @@ in {
           config.system.build.nixos-rebuild
         ];
 
-        script = "${lib.getExe nixosHydraUpgradePackages.default}";
+        script = "${lib.getExe nixosHydraUpgradePackages.default} -c /etc/nixos-hydra-upgrade/config.yaml";
 
         startAt = cfg.dates;
 

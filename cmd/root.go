@@ -12,7 +12,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var conf config.Config
+var Version = "development"
+
+var (
+	conf        config.Config
+	flagVersion bool
+)
 
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -26,9 +31,15 @@ Config follows the precedence CLI Flag > Environment varible > YAML config, with
 
   - boot - prepare a system to be upgraded on reboot
   - switch - upgrade a system in place`,
-		ValidArgs: []string{"boot", "switch"},
-		Args:      cobra.MatchAll(cobra.MaximumNArgs(1), cobra.OnlyValidArgs),
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		CompletionOptions: cobra.CompletionOptions{HiddenDefaultCmd: true},
+		ValidArgs:         []string{"boot", "switch"},
+		Args:              cobra.MatchAll(cobra.MaximumNArgs(1), cobra.OnlyValidArgs),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if flagVersion {
+				fmt.Println(Version)
+				os.Exit(0)
+			}
+
 			var err error
 			conf, err = config.InitializeConfig(cmd, args)
 			if err != nil {
@@ -101,6 +112,7 @@ Config follows the precedence CLI Flag > Environment varible > YAML config, with
 	}
 
 	rootCmd.PersistentFlags().StringP("config", "c", "", "Config file (yaml)")
+	rootCmd.PersistentFlags().BoolVarP(&flagVersion, "version", "v", false, "Output nixos-hydra-upgrade version")
 	rootCmd.PersistentFlags().BoolP(config.CobraKeys.Debug, "d", false, flagUsage(
 		config.ViperKeys.Debug,
 		"Enable debug logging",

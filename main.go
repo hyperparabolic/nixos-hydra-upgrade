@@ -5,6 +5,8 @@ import (
 )
 
 func main() {
-	cmd := cmd.NewRootCmd()
-	cmd.Execute()
+	rootCmd := cmd.NewRootCmd()
+	docsCmd := cmd.NewDocsCommand(rootCmd)
+	rootCmd.AddCommand(docsCmd)
+	rootCmd.Execute()
 }

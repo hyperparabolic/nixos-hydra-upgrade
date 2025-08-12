@@ -110,7 +110,6 @@ func InitializeConfig(rootCmd *cobra.Command, args []string) (Config, error) {
 	v.SetConfigType("yaml")
 
 	v.SetConfigFile(rootCmd.PersistentFlags().Lookup("config").Value.String())
-	v.AddConfigPath("/etc/nixos-hydra-upgrade")
 
 	v.SetEnvPrefix(envPrefix)
 	v.SetEnvKeyReplacer(envKeyReplacer)
