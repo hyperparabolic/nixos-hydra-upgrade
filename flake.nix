@@ -40,9 +40,9 @@
     in {
       default = pkgsFor.${system}.buildGoModule {
         inherit pname;
-        version = "0.0.1";
+        version = "0.1.0";
         src = ./.;
-        vendorHash = "sha256-CR0CSfqWcuc0UTZJHCHW10o5l6iCO7eWEgSVIJiZt6c=";
+        vendorHash = "sha256-pkvfBMjIy8F46rWgI1IheXjDHJHOzwBJgA0mkSUdgXg=";
 
         meta = {
           homepage = "https://github.com/hyperparabolic/nixos-hydra-upgrade";
