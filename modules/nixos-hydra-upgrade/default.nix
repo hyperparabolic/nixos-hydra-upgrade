@@ -6,7 +6,7 @@
   ...
 }: let
   cfg = config.system.autoUpgradeHydra;
-  nixosHydraUpgradePackages = inputs.nixos-hydra-upgrade.packages.${pkgs.system};
+  nixosHydraUpgradePackages = inputs.nixos-hydra-upgrade.packages.${pkgs.stdenv.hostPlatform.system};
   settingsFormat = pkgs.formats.yaml {};
 in {
   options = {
