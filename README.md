@@ -58,7 +58,7 @@ Hosts specified with the `--canary` cli flag or `system.autoUpgradeHydra.healthC
 
 ## NixOS module config
 
-All of the options are documented in the [NixOS Module](./modules/nixos-hydra-upgrade/default.nix). Here's a sample config:
+All of the options are documented in the [NixOS Module](./nix/modules/nixos-hydra-upgrade/default.nix). Here's a sample config:
 
 ```nix
 {

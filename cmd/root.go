@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/hyperparabolic/nixos-hydra-upgrade/cmd/config"
-	"github.com/hyperparabolic/nixos-hydra-upgrade/healthcheck"
-	"github.com/hyperparabolic/nixos-hydra-upgrade/hydra"
-	"github.com/hyperparabolic/nixos-hydra-upgrade/nix"
+	"github.com/hyperparabolic/nixos-hydra-upgrade/lib/healthcheck"
+	"github.com/hyperparabolic/nixos-hydra-upgrade/lib/hydra"
+	"github.com/hyperparabolic/nixos-hydra-upgrade/lib/nix"
 	"github.com/spf13/cobra"
 )
 
