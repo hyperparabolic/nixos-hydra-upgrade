@@ -9,6 +9,7 @@ import (
 	"github.com/hyperparabolic/nixos-hydra-upgrade/lib/healthcheck"
 	"github.com/hyperparabolic/nixos-hydra-upgrade/lib/hydra"
 	"github.com/hyperparabolic/nixos-hydra-upgrade/lib/nix"
+	"github.com/hyperparabolic/nixos-hydra-upgrade/lib/system"
 	"github.com/spf13/cobra"
 )
 
@@ -122,7 +123,7 @@ Config follows the precedence CLI Flag > Environment varible > YAML config, with
 
 			if conf.Reboot {
 				slog.Info("Initiating reboot")
-				nix.Reboot()
+				system.Reboot()
 			}
 		},
 	}
