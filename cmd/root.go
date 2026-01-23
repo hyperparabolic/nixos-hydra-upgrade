@@ -21,7 +21,7 @@ var (
 
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "nixos-hydra-upgrade [boot|switch]",
+		Use:   "nixos-hydra-upgrade [boot|check|dry-activate|test|switch]",
 		Short: "nixos-hydra-upgrade performs NixOS system upgrades based on hydra build success",
 		Long: `A NixOS flake system upgrader that upgrades to derivations only after they are successfully built in Hydra, and built in validations pass.
 
@@ -29,11 +29,21 @@ Most config may be specified using CLI flags, a YAML config file, or environment
 
 Config follows the precedence CLI Flag > Environment varible > YAML config, with the higher priority sources replacing the entire variable.
 
-  - boot - prepare a system to be upgraded on reboot
-  - switch - upgrade a system in place`,
+  - boot:         make the configuration the boot default
+  - check:        run pre-switch checks and exit
+  - dry-activate: show what would be done if this configuration were activated
+  - switch:       make the configuration the boot default and activate now
+  - test:         activate the configuration, but don't make it the boot default
+  `,
 		CompletionOptions: cobra.CompletionOptions{HiddenDefaultCmd: true},
-		ValidArgs:         []string{"boot", "switch"},
-		Args:              cobra.MatchAll(cobra.MaximumNArgs(1), cobra.OnlyValidArgs),
+		ValidArgs: []string{
+			"boot",
+			"check",
+			"dry-activate",
+			"switch",
+			"test",
+		},
+		Args: cobra.MatchAll(cobra.MaximumNArgs(1), cobra.OnlyValidArgs),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if flagVersion {
 				fmt.Println(Version)
@@ -99,9 +109,15 @@ Config follows the precedence CLI Flag > Environment varible > YAML config, with
 					os.Exit(1)
 				}
 			}
-			slog.Info("Performing system upgrade.", slog.String("flake", flakeSpec))
 
-			nix.NixosRebuild(conf.NixOSRebuild.Operation, flakeSpec, conf.NixOSRebuild.Args)
+			toplevel := nix.FlakeToToplevel(flakeSpec)
+			slog.Info("Building toplevel derivation.", slog.String("toplevel", toplevel))
+			result := nix.NixBuild(toplevel, conf.NixOSRebuild.Args)
+			slog.Info("Build complete", slog.String("result", result))
+
+			slog.Info("executing switch-to-derivation", slog.String("toplevel", toplevel), slog.String("operation", conf.NixOSRebuild.Operation))
+			nix.SwitchToConfiguration(result, conf.NixOSRebuild.Operation)
+
 			slog.Info("System upgrade complete.", slog.String("flake", flakeSpec))
 
 			if conf.Reboot {

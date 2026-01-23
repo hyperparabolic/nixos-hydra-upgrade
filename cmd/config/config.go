@@ -21,7 +21,7 @@ type HydraConfig struct {
 }
 
 type NixOSRebuildConfig struct {
-	Operation string   `validate:"oneof=boot switch"`
+	Operation string   `validate:"oneof=boot check dry-activate switch test"`
 	Host      string   `validate:"min=1"`
 	Args      []string `validate:"required,dive,min=1"`
 }
