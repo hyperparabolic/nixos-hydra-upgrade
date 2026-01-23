@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/hyperparabolic/nixos-hydra-upgrade/assert"
 	"github.com/hyperparabolic/nixos-hydra-upgrade/cmd"
 	"github.com/hyperparabolic/nixos-hydra-upgrade/cmd/config"
+	"github.com/hyperparabolic/nixos-hydra-upgrade/lib/assert"
 )
 
 var (
