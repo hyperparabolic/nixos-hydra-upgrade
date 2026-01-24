@@ -28,7 +28,7 @@ func NewRootCmd() *cobra.Command {
 
 Most config may be specified using CLI flags, a YAML config file, or environment variables. "Multivalue" variables should be specified as a yaml array, a comma delimited string environment variable, or CLI flags may be specified as a comma delimited string or the flag may be specified multiple times.
 
-Config follows the precedence CLI Flag > Environment varible > YAML config, with the higher priority sources replacing the entire variable.
+Config follows the precedence CLI Flag > Environment variable > YAML config, with the higher priority sources replacing the entire variable.
 
   - boot:         make the configuration the boot default
   - check:        run pre-switch checks and exit
@@ -100,7 +100,7 @@ Config follows the precedence CLI Flag > Environment varible > YAML config, with
 				slog.Info("System is already up to date. Exiting.")
 				os.Exit(0)
 			}
-			flakeSpec := fmt.Sprintf("%s#%s", hydraMetadata.OriginalUrl, conf.NixOSRebuild.Host)
+			flakeSpec := fmt.Sprintf("%s#%s", hydraMetadata.OriginalUrl, conf.NixBuild.Host)
 
 			// health checks
 			for _, h := range conf.HealthCheck.CanaryHosts {
@@ -113,11 +113,11 @@ Config follows the precedence CLI Flag > Environment varible > YAML config, with
 
 			toplevel := nix.FlakeToToplevel(flakeSpec)
 			slog.Info("Building toplevel derivation.", slog.String("toplevel", toplevel))
-			result := nix.NixBuild(toplevel, conf.NixOSRebuild.Args)
+			result := nix.NixBuild(toplevel, conf.NixBuild.Args)
 			slog.Info("Build complete", slog.String("result", result))
 
-			slog.Info("executing switch-to-derivation", slog.String("toplevel", toplevel), slog.String("operation", conf.NixOSRebuild.Operation))
-			nix.SwitchToConfiguration(result, conf.NixOSRebuild.Operation)
+			slog.Info("executing switch-to-derivation", slog.String("toplevel", toplevel), slog.String("operation", conf.NixBuild.Operation))
+			nix.SwitchToConfiguration(result, conf.NixBuild.Operation)
 
 			slog.Info("System upgrade complete.", slog.String("flake", flakeSpec))
 
@@ -158,13 +158,13 @@ Config follows the precedence CLI Flag > Environment varible > YAML config, with
 		config.ViperKeys.HealthCheck.CanaryHosts,
 		"Multivalue - Canary systems, only upgrade if these hostnames respond to ping",
 		false))
-	rootCmd.PersistentFlags().String(config.CobraKeys.NixOSRebuild.Host, "", flagUsage(
-		config.ViperKeys.NixOSRebuild.Host,
+	rootCmd.PersistentFlags().String(config.CobraKeys.NixBuild.Host, "", flagUsage(
+		config.ViperKeys.NixBuild.Host,
 		"Flake `nixosConfigurations.<name>`, usually hostname",
 		true))
-	rootCmd.PersistentFlags().StringSlice(config.CobraKeys.NixOSRebuild.Args, []string{}, flagUsage(
-		config.ViperKeys.NixOSRebuild.Args,
-		"Multivalue - Additional args to provide to nixos-rebuild. YAML array",
+	rootCmd.PersistentFlags().StringSlice(config.CobraKeys.NixBuild.Args, []string{}, flagUsage(
+		config.ViperKeys.NixBuild.Args,
+		"Multivalue - Additional args to provide to nix build. YAML array",
 		false))
 
 	return rootCmd

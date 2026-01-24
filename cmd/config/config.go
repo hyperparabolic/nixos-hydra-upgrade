@@ -20,7 +20,7 @@ type HydraConfig struct {
 	Project  string `validate:"min=1"`
 }
 
-type NixOSRebuildConfig struct {
+type NixBuildConfig struct {
 	Operation string   `validate:"oneof=boot check dry-activate switch test"`
 	Host      string   `validate:"min=1"`
 	Args      []string `validate:"required,dive,min=1"`
@@ -28,11 +28,11 @@ type NixOSRebuildConfig struct {
 
 // command config
 type Config struct {
-	Debug        bool
-	HealthCheck  HealthCheckConfig  `validate:"required"`
-	Hydra        HydraConfig        `validate:"required"`
-	NixOSRebuild NixOSRebuildConfig `mapstructure:"nixos-rebuild" validate:"required"`
-	Reboot       bool
+	Debug       bool
+	HealthCheck HealthCheckConfig `validate:"required"`
+	Hydra       HydraConfig       `validate:"required"`
+	NixBuild    NixBuildConfig    `mapstructure:"nix_build" validate:"required"`
+	Reboot      bool
 }
 
 // cobra and viper key constants, matching the command structure
@@ -47,18 +47,18 @@ type HydraConfigKeys struct {
 	Project  string
 }
 
-type NixOSRebuildConfigKeys struct {
+type NixBuildConfigKeys struct {
 	Operation string
 	Host      string
 	Args      string
 }
 
 type ConfigKeys struct {
-	Debug        string
-	HealthCheck  HealthCheckConfigKeys
-	Hydra        HydraConfigKeys
-	NixOSRebuild NixOSRebuildConfigKeys
-	Reboot       string
+	Debug       string
+	HealthCheck HealthCheckConfigKeys
+	Hydra       HydraConfigKeys
+	NixBuild    NixBuildConfigKeys
+	Reboot      string
 }
 
 var (
@@ -75,7 +75,7 @@ var (
 			Job:      "job",
 			Project:  "project",
 		},
-		NixOSRebuild: NixOSRebuildConfigKeys{
+		NixBuild: NixBuildConfigKeys{
 			Operation: "N/A",
 			Host:      "host",
 			Args:      "passthru-args",
@@ -93,10 +93,10 @@ var (
 			Job:      "hydra.job",
 			Project:  "hydra.project",
 		},
-		NixOSRebuild: NixOSRebuildConfigKeys{
-			Operation: "nixos-rebuild.operation",
-			Host:      "nixos-rebuild.host",
-			Args:      "nixos-rebuild.args",
+		NixBuild: NixBuildConfigKeys{
+			Operation: "nix_build.operation",
+			Host:      "nix_build.host",
+			Args:      "nix_build.args",
 		},
 		Reboot: "reboot",
 	}
@@ -121,9 +121,9 @@ func InitializeConfig(rootCmd *cobra.Command, args []string) (Config, error) {
 	v.BindEnv(ViperKeys.Hydra.JobSet)
 	v.BindEnv(ViperKeys.Hydra.Job)
 	v.BindEnv(ViperKeys.Hydra.Project)
-	v.BindEnv(ViperKeys.NixOSRebuild.Operation)
-	v.BindEnv(ViperKeys.NixOSRebuild.Host)
-	v.BindEnv(ViperKeys.NixOSRebuild.Args)
+	v.BindEnv(ViperKeys.NixBuild.Operation)
+	v.BindEnv(ViperKeys.NixBuild.Host)
+	v.BindEnv(ViperKeys.NixBuild.Args)
 	v.BindEnv(ViperKeys.Reboot)
 
 	v.BindPFlag(ViperKeys.Debug, rootCmd.PersistentFlags().Lookup(CobraKeys.Debug))
@@ -132,15 +132,15 @@ func InitializeConfig(rootCmd *cobra.Command, args []string) (Config, error) {
 	v.BindPFlag(ViperKeys.Hydra.JobSet, rootCmd.PersistentFlags().Lookup(CobraKeys.Hydra.JobSet))
 	v.BindPFlag(ViperKeys.Hydra.Job, rootCmd.PersistentFlags().Lookup(CobraKeys.Hydra.Job))
 	v.BindPFlag(ViperKeys.Hydra.Project, rootCmd.PersistentFlags().Lookup(CobraKeys.Hydra.Project))
-	v.BindPFlag(ViperKeys.NixOSRebuild.Operation, rootCmd.PersistentFlags().Lookup(CobraKeys.NixOSRebuild.Operation))
-	v.BindPFlag(ViperKeys.NixOSRebuild.Host, rootCmd.PersistentFlags().Lookup(CobraKeys.NixOSRebuild.Host))
-	v.BindPFlag(ViperKeys.NixOSRebuild.Args, rootCmd.PersistentFlags().Lookup(CobraKeys.NixOSRebuild.Args))
+	v.BindPFlag(ViperKeys.NixBuild.Operation, rootCmd.PersistentFlags().Lookup(CobraKeys.NixBuild.Operation))
+	v.BindPFlag(ViperKeys.NixBuild.Host, rootCmd.PersistentFlags().Lookup(CobraKeys.NixBuild.Host))
+	v.BindPFlag(ViperKeys.NixBuild.Args, rootCmd.PersistentFlags().Lookup(CobraKeys.NixBuild.Args))
 	v.BindPFlag(ViperKeys.Reboot, rootCmd.PersistentFlags().Lookup(CobraKeys.Reboot))
 
 	config := Config{}
 	// defaults
 	config.Debug = false
-	config.NixOSRebuild.Operation = "boot"
+	config.NixBuild.Operation = "boot"
 	config.Reboot = false
 
 	err := v.ReadInConfig()
@@ -154,7 +154,7 @@ func InitializeConfig(rootCmd *cobra.Command, args []string) (Config, error) {
 		return config, err
 	}
 	if len(args) > 0 {
-		config.NixOSRebuild.Operation = args[0]
+		config.NixBuild.Operation = args[0]
 	}
 
 	return config, nil
