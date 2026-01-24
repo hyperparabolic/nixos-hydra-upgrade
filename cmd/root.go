@@ -9,6 +9,7 @@ import (
 	"github.com/hyperparabolic/nixos-hydra-upgrade/lib/healthcheck"
 	"github.com/hyperparabolic/nixos-hydra-upgrade/lib/hydra"
 	"github.com/hyperparabolic/nixos-hydra-upgrade/lib/nix"
+	"github.com/hyperparabolic/nixos-hydra-upgrade/lib/system"
 	"github.com/spf13/cobra"
 )
 
@@ -21,19 +22,29 @@ var (
 
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "nixos-hydra-upgrade [boot|switch]",
+		Use:   "nixos-hydra-upgrade [boot|check|dry-activate|test|switch]",
 		Short: "nixos-hydra-upgrade performs NixOS system upgrades based on hydra build success",
 		Long: `A NixOS flake system upgrader that upgrades to derivations only after they are successfully built in Hydra, and built in validations pass.
 
 Most config may be specified using CLI flags, a YAML config file, or environment variables. "Multivalue" variables should be specified as a yaml array, a comma delimited string environment variable, or CLI flags may be specified as a comma delimited string or the flag may be specified multiple times.
 
-Config follows the precedence CLI Flag > Environment varible > YAML config, with the higher priority sources replacing the entire variable.
+Config follows the precedence CLI Flag > Environment variable > YAML config, with the higher priority sources replacing the entire variable.
 
-  - boot - prepare a system to be upgraded on reboot
-  - switch - upgrade a system in place`,
+  - boot:         make the configuration the boot default
+  - check:        run pre-switch checks and exit
+  - dry-activate: show what would be done if this configuration were activated
+  - switch:       make the configuration the boot default and activate now
+  - test:         activate the configuration, but don't make it the boot default
+  `,
 		CompletionOptions: cobra.CompletionOptions{HiddenDefaultCmd: true},
-		ValidArgs:         []string{"boot", "switch"},
-		Args:              cobra.MatchAll(cobra.MaximumNArgs(1), cobra.OnlyValidArgs),
+		ValidArgs: []string{
+			"boot",
+			"check",
+			"dry-activate",
+			"switch",
+			"test",
+		},
+		Args: cobra.MatchAll(cobra.MaximumNArgs(1), cobra.OnlyValidArgs),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if flagVersion {
 				fmt.Println(Version)
@@ -89,7 +100,7 @@ Config follows the precedence CLI Flag > Environment varible > YAML config, with
 				slog.Info("System is already up to date. Exiting.")
 				os.Exit(0)
 			}
-			flakeSpec := fmt.Sprintf("%s#%s", hydraMetadata.OriginalUrl, conf.NixOSRebuild.Host)
+			flakeSpec := fmt.Sprintf("%s#%s", hydraMetadata.OriginalUrl, conf.NixBuild.Host)
 
 			// health checks
 			for _, h := range conf.HealthCheck.CanaryHosts {
@@ -99,14 +110,20 @@ Config follows the precedence CLI Flag > Environment varible > YAML config, with
 					os.Exit(1)
 				}
 			}
-			slog.Info("Performing system upgrade.", slog.String("flake", flakeSpec))
 
-			nix.NixosRebuild(conf.NixOSRebuild.Operation, flakeSpec, conf.NixOSRebuild.Args)
+			toplevel := nix.FlakeToToplevel(flakeSpec)
+			slog.Info("Building toplevel derivation.", slog.String("toplevel", toplevel))
+			result := nix.NixBuild(toplevel, conf.NixBuild.Args)
+			slog.Info("Build complete", slog.String("result", result))
+
+			slog.Info("executing switch-to-derivation", slog.String("toplevel", toplevel), slog.String("operation", conf.NixBuild.Operation))
+			nix.SwitchToConfiguration(result, conf.NixBuild.Operation)
+
 			slog.Info("System upgrade complete.", slog.String("flake", flakeSpec))
 
 			if conf.Reboot {
 				slog.Info("Initiating reboot")
-				nix.Reboot()
+				system.Reboot()
 			}
 		},
 	}
@@ -141,13 +158,13 @@ Config follows the precedence CLI Flag > Environment varible > YAML config, with
 		config.ViperKeys.HealthCheck.CanaryHosts,
 		"Multivalue - Canary systems, only upgrade if these hostnames respond to ping",
 		false))
-	rootCmd.PersistentFlags().String(config.CobraKeys.NixOSRebuild.Host, "", flagUsage(
-		config.ViperKeys.NixOSRebuild.Host,
+	rootCmd.PersistentFlags().String(config.CobraKeys.NixBuild.Host, "", flagUsage(
+		config.ViperKeys.NixBuild.Host,
 		"Flake `nixosConfigurations.<name>`, usually hostname",
 		true))
-	rootCmd.PersistentFlags().StringSlice(config.CobraKeys.NixOSRebuild.Args, []string{}, flagUsage(
-		config.ViperKeys.NixOSRebuild.Args,
-		"Multivalue - Additional args to provide to nixos-rebuild. YAML array",
+	rootCmd.PersistentFlags().StringSlice(config.CobraKeys.NixBuild.Args, []string{}, flagUsage(
+		config.ViperKeys.NixBuild.Args,
+		"Multivalue - Additional args to provide to nix build. YAML array",
 		false))
 
 	return rootCmd

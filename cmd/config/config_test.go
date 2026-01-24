@@ -22,7 +22,7 @@ hydra:
   project: yaml-config
   jobset: yaml-branch
   job: hosts.yaml
-nixos-rebuild:
+nix_build:
   host: yaml
   operation: switch
   args:
@@ -39,7 +39,7 @@ reboot: true`)
 			Job:      "hosts.env",
 			Project:  "env-config",
 		},
-		NixOSRebuild: config.NixOSRebuildConfig{
+		NixBuild: config.NixBuildConfig{
 			Args:      []string{"--env1", "--env2"},
 			Host:      "env",
 			Operation: "switch",
@@ -57,7 +57,7 @@ reboot: true`)
 			Job:      "hosts.flag",
 			Project:  "flag-config",
 		},
-		NixOSRebuild: config.NixOSRebuildConfig{
+		NixBuild: config.NixBuildConfig{
 			Args:      []string{"--flag1", "--flag2"},
 			Host:      "flag",
 			Operation: "switch",
@@ -75,7 +75,7 @@ func TestInitializeConfig(t *testing.T) {
 		}
 
 		assert.Equal(t, c.Debug, false)
-		assert.Equal(t, c.NixOSRebuild.Operation, "boot")
+		assert.Equal(t, c.NixBuild.Operation, "boot")
 		assert.Equal(t, c.Reboot, false)
 	})
 
@@ -103,9 +103,9 @@ func TestInitializeConfig(t *testing.T) {
 		assert.Equal(t, c.Hydra.Job, "hosts.yaml")
 		assert.Equal(t, c.Hydra.JobSet, "yaml-branch")
 		assert.Equal(t, c.Hydra.Project, "yaml-config")
-		assert.ArrayEqual(t, c.NixOSRebuild.Args, []string{"--yaml"})
-		assert.Equal(t, c.NixOSRebuild.Host, "yaml")
-		assert.Equal(t, c.NixOSRebuild.Operation, "switch")
+		assert.ArrayEqual(t, c.NixBuild.Args, []string{"--yaml"})
+		assert.Equal(t, c.NixBuild.Host, "yaml")
+		assert.Equal(t, c.NixBuild.Operation, "switch")
 		assert.Equal(t, c.Reboot, true)
 	})
 
@@ -116,9 +116,9 @@ func TestInitializeConfig(t *testing.T) {
 		t.Setenv("NHU_HYDRA_JOBSET", cenv.Hydra.JobSet)
 		t.Setenv("NHU_HYDRA_JOB", cenv.Hydra.Job)
 		t.Setenv("NHU_HYDRA_PROJECT", cenv.Hydra.Project)
-		t.Setenv("NHU_NIXOS_REBUILD_ARGS", fmt.Sprintf("%v,%v", cenv.NixOSRebuild.Args[0], cenv.NixOSRebuild.Args[1]))
-		t.Setenv("NHU_NIXOS_REBUILD_HOST", cenv.NixOSRebuild.Host)
-		t.Setenv("NHU_NIXOS_REBUILD_OPERATION", cenv.NixOSRebuild.Operation)
+		t.Setenv("NHU_NIX_BUILD_ARGS", fmt.Sprintf("%v,%v", cenv.NixBuild.Args[0], cenv.NixBuild.Args[1]))
+		t.Setenv("NHU_NIX_BUILD_HOST", cenv.NixBuild.Host)
+		t.Setenv("NHU_NIX_BUILD_OPERATION", cenv.NixBuild.Operation)
 		t.Setenv("NHU_REBOOT", strconv.FormatBool(cenv.Reboot))
 
 		cmd := cmd.NewRootCmd()
@@ -133,9 +133,9 @@ func TestInitializeConfig(t *testing.T) {
 		assert.Equal(t, c.Hydra.Job, cenv.Hydra.Job)
 		assert.Equal(t, c.Hydra.JobSet, cenv.Hydra.JobSet)
 		assert.Equal(t, c.Hydra.Project, cenv.Hydra.Project)
-		assert.ArrayEqual(t, c.NixOSRebuild.Args, cenv.NixOSRebuild.Args)
-		assert.Equal(t, c.NixOSRebuild.Host, cenv.NixOSRebuild.Host)
-		assert.Equal(t, c.NixOSRebuild.Operation, cenv.NixOSRebuild.Operation)
+		assert.ArrayEqual(t, c.NixBuild.Args, cenv.NixBuild.Args)
+		assert.Equal(t, c.NixBuild.Host, cenv.NixBuild.Host)
+		assert.Equal(t, c.NixBuild.Operation, cenv.NixBuild.Operation)
 		assert.Equal(t, c.Reboot, cenv.Reboot)
 	})
 
@@ -181,15 +181,15 @@ func TestInitializeConfig(t *testing.T) {
 			"--project",
 			cflag.Hydra.Project,
 			"--passthru-args",
-			fmt.Sprintf("%v,%v", cflag.NixOSRebuild.Args[0], cflag.NixOSRebuild.Args[1]),
+			fmt.Sprintf("%v,%v", cflag.NixBuild.Args[0], cflag.NixBuild.Args[1]),
 			"--host",
-			cflag.NixOSRebuild.Host,
+			cflag.NixBuild.Host,
 			"--reboot",
 		})
 		if err != nil {
 			panic(err)
 		}
-		c, err := config.InitializeConfig(cmd, []string{cflag.NixOSRebuild.Operation})
+		c, err := config.InitializeConfig(cmd, []string{cflag.NixBuild.Operation})
 		if err != nil {
 			panic(err)
 		}
@@ -200,9 +200,9 @@ func TestInitializeConfig(t *testing.T) {
 		assert.Equal(t, c.Hydra.Job, cflag.Hydra.Job)
 		assert.Equal(t, c.Hydra.JobSet, cflag.Hydra.JobSet)
 		assert.Equal(t, c.Hydra.Project, cflag.Hydra.Project)
-		assert.ArrayEqual(t, c.NixOSRebuild.Args, cflag.NixOSRebuild.Args)
-		assert.Equal(t, c.NixOSRebuild.Host, cflag.NixOSRebuild.Host)
-		assert.Equal(t, c.NixOSRebuild.Operation, cflag.NixOSRebuild.Operation)
+		assert.ArrayEqual(t, c.NixBuild.Args, cflag.NixBuild.Args)
+		assert.Equal(t, c.NixBuild.Host, cflag.NixBuild.Host)
+		assert.Equal(t, c.NixBuild.Operation, cflag.NixBuild.Operation)
 		assert.Equal(t, c.Reboot, cflag.Reboot)
 	})
 
@@ -245,8 +245,8 @@ func cloneConfig(c config.Config) config.Config {
 	c2 := c
 	c2.HealthCheck.CanaryHosts = []string{}
 	c2.HealthCheck.CanaryHosts = append(c2.HealthCheck.CanaryHosts, c.HealthCheck.CanaryHosts...)
-	c2.NixOSRebuild.Args = []string{}
-	c2.NixOSRebuild.Args = append(c2.NixOSRebuild.Args, c.NixOSRebuild.Args...)
+	c2.NixBuild.Args = []string{}
+	c2.NixBuild.Args = append(c2.NixBuild.Args, c.NixBuild.Args...)
 
 	return c2
 }
@@ -263,7 +263,7 @@ func TestValidate(t *testing.T) {
 	t.Run("required config passes validation without errors", func(t *testing.T) {
 		c := cloneConfig(cenv)
 		c.HealthCheck.CanaryHosts = []string{}
-		c.NixOSRebuild.Args = []string{}
+		c.NixBuild.Args = []string{}
 
 		err := c.Validate()
 
@@ -286,13 +286,13 @@ func TestValidate(t *testing.T) {
 	emptyProject := cloneConfig(cenv)
 	emptyProject.Hydra.Project = ""
 	emptyOperation := cloneConfig(cenv)
-	emptyOperation.NixOSRebuild.Operation = ""
+	emptyOperation.NixBuild.Operation = ""
 	badOperation := cloneConfig(cenv)
-	badOperation.NixOSRebuild.Operation = "invalid"
+	badOperation.NixBuild.Operation = "invalid"
 	emptyHost := cloneConfig(cenv)
-	emptyHost.NixOSRebuild.Host = ""
+	emptyHost.NixBuild.Host = ""
 	emptyArg := cloneConfig(cenv)
-	emptyArg.NixOSRebuild.Args = []string{""}
+	emptyArg.NixBuild.Args = []string{""}
 
 	var validationFailureTests = []struct {
 		description string
@@ -304,10 +304,10 @@ func TestValidate(t *testing.T) {
 		{"empty Hydra.Job", emptyJob},
 		{"empty Hydra.JobSet", emptyJobSet},
 		{"empty Hydra.Project", emptyProject},
-		{"empty NixOSRebuild.Operation", emptyOperation},
-		{"invalid NixOSRebuild.Operation", badOperation},
-		{"empty NixOSRebuild.Host", emptyHost},
-		{"empty NixOSRebuild.Args string", emptyArg},
+		{"empty NixBuild.Operation", emptyOperation},
+		{"invalid NixBuild.Operation", badOperation},
+		{"empty NixBuild.Host", emptyHost},
+		{"empty NixBuild.Args string", emptyArg},
 	}
 
 	for _, test := range validationFailureTests {

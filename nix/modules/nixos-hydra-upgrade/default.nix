@@ -9,6 +9,12 @@
   nixosHydraUpgradePackages = inputs.nixos-hydra-upgrade.packages.${pkgs.stdenv.hostPlatform.system};
   settingsFormat = pkgs.formats.yaml {};
 in {
+  imports = [
+    # nixos-rebuild options deprecated with v0.3.0, likely remove with v0.4.0 or later
+    (lib.mkRemovedOptionModule ["system" "autoUpgradeHydra" "settings" "nixos-rebuild" "host"] ["system" "autoUpgradeHydra" "settings" "nix_build" "host"])
+    (lib.mkRemovedOptionModule ["system" "autoUpgradeHydra" "settings" "nixos-rebuild" "operation"] ["system" "autoUpgradeHydra" "settings" "nix_build" "operation"])
+  ];
+
   options = {
     system.autoUpgradeHydra = {
       enable = lib.mkEnableOption "Whether to perform system upgrades with nixos-hydra-upgrade.";
@@ -98,20 +104,25 @@ in {
                 };
               };
             };
-            nixos-rebuild = lib.mkOption {
+            nix_build = lib.mkOption {
               description = ''
-                Options to pass to `nixos-rebuild`.
+                Builds are performed with `nix build`, and separately activated with the
+                {command}`<store>/bin/switch-to-configuration`. These options configure that
+                process.
               '';
               type = lib.types.submodule {
                 freeformType = settingsFormat.type;
                 options = {
                   operation = lib.mkOption {
                     type = lib.types.enum [
-                      "switch"
                       "boot"
+                      "check"
+                      "dry-activate"
+                      "switch"
+                      "test"
                     ];
                     default = "boot";
-                    description = "{command}`nixos-rebuild` operation to execute";
+                    description = "{command}`switch-to-configuration` operation to execute";
                   };
                   host = lib.mkOption {
                     type = lib.types.str;
@@ -122,9 +133,9 @@ in {
                     type = lib.types.listOf lib.types.str;
                     default = [];
                     example = [
-                      "--accept-flake-config"
+                      "--quiet"
                     ];
-                    description = "Additional flags to pass to {command}`nixos-rebuild`";
+                    description = "Additional flags to pass to {command}`nix build`";
                   };
                 };
               };
@@ -133,7 +144,7 @@ in {
               default = false;
               type = lib.types.bool;
               description = ''
-                Wether to reboot the system following a successful {command}`nixos-rebuild`.
+                Wether to reboot the system after changing profiles.
               '';
             };
           };
@@ -167,7 +178,6 @@ in {
 
         path = [
           config.nix.package
-          config.system.build.nixos-rebuild
         ];
 
         script = "${lib.getExe nixosHydraUpgradePackages.default} -c /etc/nixos-hydra-upgrade/config.yaml";
