@@ -9,12 +9,6 @@
   nixosHydraUpgradePackages = inputs.nixos-hydra-upgrade.packages.${pkgs.stdenv.hostPlatform.system};
   settingsFormat = pkgs.formats.yaml {};
 in {
-  imports = [
-    # nixos-rebuild options deprecated with v0.3.0, likely remove with v0.4.0 or later
-    (lib.mkRemovedOptionModule ["system" "autoUpgradeHydra" "settings" "nixos-rebuild" "host"] ["system" "autoUpgradeHydra" "settings" "nix_build" "host"])
-    (lib.mkRemovedOptionModule ["system" "autoUpgradeHydra" "settings" "nixos-rebuild" "operation"] ["system" "autoUpgradeHydra" "settings" "nix_build" "operation"])
-  ];
-
   options = {
     system.autoUpgradeHydra = {
       enable = lib.mkEnableOption "Whether to perform system upgrades with nixos-hydra-upgrade.";
