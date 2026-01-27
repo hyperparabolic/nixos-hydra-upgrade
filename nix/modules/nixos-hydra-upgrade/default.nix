@@ -170,8 +170,9 @@ in {
           }
           // config.networking.proxy.envVars;
 
-        path = [
+        path = with pkgs; [
           config.nix.package
+          dix
         ];
 
         script = "${lib.getExe nixosHydraUpgradePackages.default} -c /etc/nixos-hydra-upgrade/config.yaml";
