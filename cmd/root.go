@@ -116,6 +116,8 @@ Config follows the precedence CLI Flag > Environment variable > YAML config, wit
 			result := nix.NixBuild(toplevel, conf.NixBuild.Args)
 			slog.Info("Build complete", slog.String("result", result))
 
+			nix.NixDiff("/nix/var/nix/profiles/system", result)
+
 			slog.Info("executing switch-to-derivation", slog.String("toplevel", toplevel), slog.String("operation", conf.NixBuild.Operation))
 			nix.SwitchToConfiguration(result, conf.NixBuild.Operation)
 
