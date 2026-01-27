@@ -37,7 +37,7 @@
 
     packages = forEachSystem (system: let
       pkgs = pkgsFor.${system};
-      version = "v0.3.1";
+      version = "v0.3.2";
     in {
       default = pkgsFor.${system}.buildGoModule {
         inherit pname version;
