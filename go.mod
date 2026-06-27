@@ -1,6 +1,6 @@
 module github.com/hyperparabolic/nixos-hydra-upgrade
 
-go 1.25.5
+go 1.25.11
 
 require (
 	github.com/prometheus-community/pro-bing v0.7.0 // direct
