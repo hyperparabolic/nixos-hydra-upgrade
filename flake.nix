@@ -42,7 +42,7 @@
       default = pkgsFor.${system}.buildGoModule {
         inherit pname version;
         src = ./.;
-        vendorHash = "sha256-JjMGnIllYJ+c6rb33bSMnQwJlIWe74Exj1ltgXTenkQ=";
+        vendorHash = "sha256-EyPmXv7Oere/Tm6gvLxxKsQsRMTbbg7xhDPbkH4u9yc=";
 
         ldflags = [
           "-X 'github.com/hyperparabolic/nixos-hydra-upgrade/cmd.Version=${version}'"
